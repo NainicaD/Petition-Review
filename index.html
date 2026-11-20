@@ -5,115 +5,154 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Petition Review Flags</title>
 <meta name="claude:viewport-fit-sides" content="cover">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&family=Source+Serif+4:opsz,wght@8..60,600;8..60,700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>
-/* Layout: civic form tool. Two views (petitioner preview step, staff queue) under one header; content column max 960px. */
+/* Layout: civic form tool. Two views (petitioner steps, staff queue) under one header; content column max 1180px.
+   Light theme is the default; dark only when the viewer picks it with the header toggle. */
 :root{
-  --bg:#f5f7f9; --surface:#ffffff; --sunk:#eef2f5; --line:#d5dde4;
-  --fg:#17232e; --muted:#566573; --accent:#1d5e7a; --accent-ink:#ffffff; --accent-soft:#e1eef4;
-  --warn:#8a5a00; --warn-soft:#fdf1d8; --info:#2f5b8a; --info-soft:#e4ecf6; --ok:#2e6b45; --ok-soft:#e2f1e7;
-  --f-display:"Source Serif 4", Georgia, serif;
+  --bg:#f6f8fa; --surface:#ffffff; --sunk:#edf1f4; --line:#cfd8df;
+  --fg:#16222c; --muted:#4f5e6b; --accent:#1d5e7a; --accent-ink:#ffffff; --accent-soft:#e1eef4;
+  --warn:#7a4f00; --warn-line:#c48a00; --warn-soft:#fdf1d8; --info:#2a5585; --info-soft:#e4ecf6; --ok:#2a6540; --ok-soft:#e2f1e7;
   --f-body:"Public Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
   --f-mono:"IBM Plex Mono", ui-monospace, Menlo, monospace;
+  color-scheme:light;
 }
-@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
-  --bg:#0f161c; --surface:#16212a; --sunk:#1c2933; --line:#2c3b47;
-  --fg:#e3eaf0; --muted:#94a5b3; --accent:#5fb0d3; --accent-ink:#0b1a22; --accent-soft:#1a3442;
-  --warn:#f0c26a; --warn-soft:#3a2d12; --info:#8db5e6; --info-soft:#1c2c40; --ok:#7fcf9c; --ok-soft:#173022; color-scheme:dark}}
 :root[data-theme="dark"]{
-  --bg:#0f161c; --surface:#16212a; --sunk:#1c2933; --line:#2c3b47;
-  --fg:#e3eaf0; --muted:#94a5b3; --accent:#5fb0d3; --accent-ink:#0b1a22; --accent-soft:#1a3442;
-  --warn:#f0c26a; --warn-soft:#3a2d12; --info:#8db5e6; --info-soft:#1c2c40; --ok:#7fcf9c; --ok-soft:#173022; color-scheme:dark}
+  --bg:#1a2129; --surface:#222b35; --sunk:#2a3540; --line:#3c4a57;
+  --fg:#eef2f5; --muted:#b4c0ca; --accent:#7cc3e0; --accent-ink:#0b1a22; --accent-soft:#24414f;
+  --warn:#f5cf80; --warn-line:#d9a63a; --warn-soft:#3d321a; --info:#a5c6ee; --info-soft:#253650; --ok:#94d8ad; --ok-soft:#203a2a;
+  color-scheme:dark;
+}
 
 *{box-sizing:border-box}
-body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:15px;line-height:1.5}
-.wrap{max-width:960px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 48px}
-header.top{display:flex;flex-wrap:wrap;gap:12px 24px;align-items:flex-end;justify-content:space-between;border-bottom:1px solid var(--line);padding-bottom:16px;margin-bottom:20px}
-h1{font-family:var(--f-display);font-size:1.75rem;line-height:1.2;margin:0;text-wrap:balance}
-.eyebrow{font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600;margin:0 0 4px}
-.tabs{display:flex;gap:4px;background:var(--sunk);padding:4px;border-radius:8px}
-.tabs button{font:inherit;font-weight:600;font-size:.88rem;border:0;background:transparent;color:var(--muted);padding:8px 14px;border-radius:6px;cursor:pointer}
-.tabs button[aria-selected="true"]{background:var(--surface);color:var(--fg);box-shadow:0 1px 2px rgba(0,0,0,.08)}
-button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:17px;line-height:1.6}
+.wrap{max-width:1180px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:24px 56px}
+.skip{position:absolute;left:-9999px}.skip:focus{left:12px;top:12px;background:var(--surface);color:var(--fg);padding:8px 12px;border-radius:6px;z-index:10}
 
-.grid{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:20px;align-items:start}
-@media (max-width:780px){.grid{grid-template-columns:minmax(0,1fr)}}
-section.panel{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:18px}
-h2{font-family:var(--f-display);font-size:1.15rem;margin:0 0 4px}
-.sub{color:var(--muted);font-size:.88rem;margin:0 0 14px}
-.stack{display:flex;flex-direction:column;gap:14px}
-label.lbl{display:block;font-weight:600;font-size:.85rem;margin-bottom:4px}
-select,input[type=text],input[type=date],textarea{font:inherit;width:100%;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:8px 10px}
-textarea{min-height:64px;resize:vertical}
-.incident{border:1px solid var(--line);border-radius:6px;padding:12px;display:grid;grid-template-columns:150px minmax(0,1fr);gap:10px;background:var(--bg)}
+header.top{display:flex;flex-wrap:wrap;gap:16px 24px;align-items:flex-end;justify-content:space-between;border-bottom:1px solid var(--line);padding-bottom:18px;margin-bottom:24px}
+h1{font-size:1.9rem;line-height:1.2;margin:0 0 6px;font-weight:700}
+.eyebrow{font-size:.85rem;letter-spacing:.04em;color:var(--muted);font-weight:600;margin:0 0 6px}
+.purpose{margin:0;color:var(--muted);max-width:60ch}
+.headctl{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.tabs{display:flex;gap:4px;background:var(--sunk);padding:4px;border-radius:8px}
+.tabs button{font:inherit;font-weight:600;font-size:.95rem;border:0;background:transparent;color:var(--muted);padding:10px 16px;border-radius:6px;cursor:pointer}
+.tabs button[aria-selected="true"]{background:var(--surface);color:var(--fg);box-shadow:0 1px 3px rgba(0,0,0,.12)}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+
+/* Step indicator */
+ol.steps{list-style:none;display:flex;flex-wrap:wrap;gap:8px;padding:0;margin:0 0 20px;counter-reset:s}
+ol.steps li{flex:1 1 200px}
+ol.steps a{display:flex;gap:10px;align-items:center;text-decoration:none;color:var(--fg);background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:10px 14px;font-weight:600}
+ol.steps .n{display:inline-grid;place-items:center;width:30px;height:30px;border-radius:50%;background:var(--sunk);color:var(--fg);font-weight:700;flex-shrink:0}
+ol.steps li.done .n{background:var(--ok);color:var(--surface)}
+ol.steps .state{display:block;font-size:.85rem;font-weight:500;color:var(--muted)}
+
+.grid{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:24px;align-items:start}
+@media (max-width:900px){.grid{grid-template-columns:minmax(0,1fr)}}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:22px}
+h2{font-size:1.3rem;margin:0 0 4px;font-weight:700}
+.sub{color:var(--muted);margin:0 0 16px}
+.stack{display:flex;flex-direction:column;gap:18px}
+label.lbl,.lbl{display:block;font-weight:600;font-size:1rem;margin-bottom:4px}
+.hint{display:block;font-size:.92rem;color:var(--muted);margin:0 0 6px}
+select,input[type=text],input[type=date],textarea{font:inherit;width:100%;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:10px 12px}
+input[type=file]{font:inherit;font-size:.95rem;max-width:100%}
+textarea{min-height:96px;resize:vertical}
+.incident{border:1px solid var(--line);border-radius:8px;padding:16px;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px 18px;background:var(--bg)}
 .incident .full{grid-column:1/-1}
 .incident header{grid-column:1/-1;display:flex;justify-content:space-between;align-items:center}
-.incident header b{font-size:.85rem}
-@media (max-width:520px){.incident{grid-template-columns:minmax(0,1fr)}}
-.btn{font:inherit;font-weight:600;font-size:.88rem;border-radius:6px;padding:8px 14px;cursor:pointer;border:1px solid var(--line);background:var(--surface);color:var(--fg)}
+.incident header b{font-size:1.05rem}
+@media (max-width:560px){.incident{grid-template-columns:minmax(0,1fr)}}
+.files{margin:6px 0 0;padding-left:20px;font-size:.95rem}
+.btn{font:inherit;font-weight:600;font-size:1rem;border-radius:6px;padding:10px 16px;cursor:pointer;border:1px solid var(--line);background:var(--surface);color:var(--fg)}
 .btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
-.btn.link{border:0;background:none;color:var(--accent);padding:4px 0}
-.q{display:flex;justify-content:space-between;gap:12px;align-items:center;padding:10px 0;border-top:1px solid var(--line)}
-.q:first-of-type{border-top:0}
-.q span{min-width:0}
-.yn{display:flex;gap:4px;flex-shrink:0}
-.yn label{font-size:.82rem;font-weight:600;border:1px solid var(--line);border-radius:5px;padding:4px 10px;cursor:pointer;color:var(--muted)}
+.btn.link{border:0;background:none;color:var(--accent);padding:6px 0;text-decoration:underline;text-underline-offset:3px}
+
+/* Safety questions: question text left, answer buttons in a fixed aligned column */
+.q{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:16px;align-items:center;padding:12px 0;border-top:1px solid var(--line)}
+.q:first-child{border-top:0}
+fieldset.q{margin:0;border:0;border-top:1px solid var(--line);padding:12px 0;min-width:0}
+fieldset.q:first-child{border-top:0}
+fieldset.q legend{float:left;padding:0}
+.yn{display:grid;grid-template-columns:repeat(3,84px);gap:6px}
+.yn label{text-align:center;font-size:.95rem;font-weight:600;border:1px solid var(--line);border-radius:6px;padding:7px 0;cursor:pointer;color:var(--muted);background:var(--surface)}
 .yn input{position:absolute;opacity:0;pointer-events:none}
-.yn input:checked+label{background:var(--accent-soft);border-color:var(--accent);color:var(--fg)}
-.yn input:focus-visible+label{outline:2px solid var(--accent);outline-offset:2px}
+.yn input:checked+label{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.yn input:focus-visible+label{outline:3px solid var(--accent);outline-offset:2px}
+@media (max-width:560px){.q{grid-template-columns:minmax(0,1fr)}.yn{grid-template-columns:repeat(3,1fr)}}
 
-aside.review{position:sticky;top:12px}
-.note{border-left:3px solid var(--info);background:var(--info-soft);padding:10px 12px;border-radius:0 6px 6px 0;font-size:.88rem}
-.note.warn{border-color:var(--warn);background:var(--warn-soft)}
+aside.review{position:sticky;top:16px}
+.legend-box{display:flex;flex-direction:column;gap:6px;font-size:.92rem;color:var(--muted);background:var(--sunk);border-radius:8px;padding:10px 12px;margin-bottom:14px}
+.legend-box span{display:flex;gap:8px;align-items:center}
+.sw{width:14px;height:14px;border-radius:3px;flex-shrink:0;border-left:4px solid}
+.sw.warn{background:var(--warn-soft);border-color:var(--warn-line)}
+.sw.info{background:var(--info-soft);border-color:var(--info)}
+.sw.ok{background:var(--ok-soft);border-color:var(--ok)}
+.note{border-left:4px solid var(--info);background:var(--info-soft);padding:12px 14px;border-radius:0 8px 8px 0}
+.note.warn{border-color:var(--warn-line);background:var(--warn-soft)}
 .note.ok{border-color:var(--ok);background:var(--ok-soft)}
-.note b{display:block;font-size:.78rem;letter-spacing:.04em;text-transform:uppercase;margin-bottom:2px}
-.cite{font-family:var(--f-mono);font-size:.8rem}
-.fine{font-size:.8rem;color:var(--muted)}
+.note b{display:block;font-size:.9rem;margin-bottom:2px}
+.note details{margin-top:6px;font-size:.95rem}
+.note summary{cursor:pointer;color:var(--accent);font-weight:600}
+.cite{font-family:var(--f-mono);font-size:.9rem}
+.fine{font-size:.92rem;color:var(--muted)}
 
-.legend{display:flex;flex-wrap:wrap;gap:8px 16px;font-size:.82rem;color:var(--muted);margin-bottom:12px}
-.tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:8px;background:var(--surface)}
-table{border-collapse:collapse;width:100%;min-width:680px;font-size:.88rem}
-th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:top}
-th{font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600;background:var(--sunk)}
+.legend{display:flex;flex-wrap:wrap;gap:8px 20px;font-size:.95rem;color:var(--muted);margin-bottom:14px}
+.tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;min-width:720px;font-size:1rem}
+th,td{text-align:left;padding:12px 14px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:.85rem;letter-spacing:.03em;color:var(--muted);font-weight:700;background:var(--sunk)}
 tbody tr.row{cursor:pointer}
 tbody tr.row:hover{background:var(--sunk)}
-tr.prompt td:first-child{box-shadow:inset 3px 0 0 var(--warn)}
+tr.prompt td:first-child{box-shadow:inset 4px 0 0 var(--warn-line)}
 .mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums;white-space:nowrap}
-.chips{display:flex;flex-wrap:wrap;gap:4px}
-.chip{font-size:.75rem;font-weight:600;padding:2px 8px;border-radius:999px;white-space:nowrap}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font-size:.85rem;font-weight:600;padding:3px 10px;border-radius:999px;white-space:nowrap}
 .chip.warn{background:var(--warn-soft);color:var(--warn)}
 .chip.info{background:var(--info-soft);color:var(--info)}
 .chip.none{color:var(--muted);font-weight:500;padding-left:0}
 tr.detail td{background:var(--bg)}
-.detailgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px 24px}
-.detailgrid h3{font-size:.78rem;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:0 0 6px}
-.detailgrid ul{margin:0;padding-left:18px}
-.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom,0px));background:var(--fg);color:var(--bg);padding:10px 16px;border-radius:6px;font-weight:600;font-size:.88rem}
-footer{margin-top:28px;font-size:.8rem;color:var(--muted);border-top:1px solid var(--line);padding-top:12px}
+.detailgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px 28px}
+.detailgrid h3{font-size:.9rem;color:var(--muted);margin:0 0 6px}
+.detailgrid ul{margin:0;padding-left:20px}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom,0px));background:var(--fg);color:var(--bg);padding:12px 18px;border-radius:6px;font-weight:600}
+footer{margin-top:32px;font-size:.92rem;color:var(--muted);border-top:1px solid var(--line);padding-top:14px}
 @media (prefers-reduced-motion:no-preference){.note{animation:fade .2s ease}@keyframes fade{from{opacity:.4}to{opacity:1}}}
 </style>
+<script>
+/* Apply the saved theme before first paint. Light unless the viewer chose dark. */
+try{if(localStorage.getItem("pr-theme")==="dark")document.documentElement.dataset.theme="dark"}catch(e){}
+</script>
 </head>
 <body>
-
+<a class="skip" href="#main">Skip to content</a>
 <div class="wrap">
   <header class="top">
     <div>
       <p class="eyebrow">CS4535 Team 4 · Prototype, not an official court site</p>
       <h1>Petition Review Flags</h1>
+      <p class="purpose">A check step for Indiana protection order petitions. Petitioners see gentle notes before they sign. Court staff see each petition in the order it arrived, with its flags.</p>
     </div>
-    <div class="tabs" role="tablist">
-      <button id="tab-pet" role="tab" aria-selected="true">Petitioner preview</button>
-      <button id="tab-staff" role="tab" aria-selected="false">Court staff queue</button>
+    <div class="headctl">
+      <div class="tabs" role="tablist" aria-label="Choose a view">
+        <button id="tab-pet" role="tab" aria-selected="true" aria-controls="view-pet">For petitioners</button>
+        <button id="tab-staff" role="tab" aria-selected="false" aria-controls="view-staff" tabindex="-1">For court staff</button>
+      </div>
+      <button class="btn" id="theme" type="button" aria-pressed="false">Dark mode</button>
     </div>
   </header>
 
+  <main id="main">
   <!-- PETITIONER VIEW -->
-  <div id="view-pet">
+  <div id="view-pet" role="tabpanel" aria-labelledby="tab-pet">
+    <nav aria-label="Steps">
+      <ol class="steps" id="steps"></ol>
+    </nav>
     <div class="grid">
       <div class="stack">
-        <section class="panel">
-          <h2>Your petition</h2>
-          <p class="sub">Preview step, after the form is filled out and before signing. Example data is filled in.</p>
+        <section class="panel" id="step-1" aria-labelledby="h-step-1">
+          <h2 id="h-step-1">1. What happened</h2>
+          <p class="sub">Example answers are filled in so you can try it.</p>
           <div class="stack">
             <div>
               <label class="lbl" for="ground">What is this petition based on?</label>
@@ -125,54 +164,61 @@ footer{margin-top:28px;font-size:.8rem;color:var(--muted);border-top:1px solid v
               </select>
             </div>
             <div>
-              <div class="lbl">Incidents</div>
-              <div id="incidents" class="stack"></div>
+              <div class="lbl" id="inc-label">Incidents</div>
+              <span class="hint">Add each incident separately, one per box.</span>
+              <div id="incidents" class="stack" aria-labelledby="inc-label"></div>
               <button class="btn link" id="add-inc" type="button">+ Add another incident</button>
             </div>
           </div>
         </section>
 
-        <section class="panel">
-          <h2>Safety questions</h2>
-          <p class="sub">Your answers are shown to court staff as you give them. They do not change whether your petition is accepted.</p>
+        <section class="panel" id="step-2" aria-labelledby="h-step-2">
+          <h2 id="h-step-2">2. Safety questions</h2>
+          <p class="sub">Court staff see your answers exactly as you give them. They don't affect whether your petition is accepted.</p>
           <div id="questions"></div>
         </section>
       </div>
 
-      <aside class="review panel">
-        <h2>Before you sign</h2>
+      <aside class="review panel" id="step-3" aria-labelledby="h-step-3">
+        <h2 id="h-step-3">3. Review and sign</h2>
         <p class="sub">These are notes, not requirements. You can file either way.</p>
-        <div id="notes" class="stack"></div>
-        <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:16px">
+        <div class="legend-box" aria-label="What the colors mean">
+          <span><i class="sw warn" aria-hidden="true"></i>Yellow: privacy. The other party can see this.</span>
+          <span><i class="sw info" aria-hidden="true"></i>Blue: something may be missing.</span>
+          <span><i class="sw ok" aria-hidden="true"></i>Green: nothing to check.</span>
+        </div>
+        <div id="notes" class="stack" aria-live="polite"></div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:18px">
           <button class="btn primary" id="submit" type="button">Continue to sign and file</button>
           <button class="btn" id="reset" type="button">Reset example</button>
         </div>
-        <p class="fine" style="margin-top:12px">This tool does not give legal advice or tell you whether you will get an order.</p>
+        <p class="fine" style="margin-top:12px">This tool doesn't give legal advice or tell you whether you will get an order.</p>
       </aside>
     </div>
   </div>
 
   <!-- STAFF VIEW -->
-  <div id="view-staff" hidden>
-    <section class="panel" style="margin-bottom:16px">
+  <div id="view-staff" role="tabpanel" aria-labelledby="tab-staff" hidden>
+    <section class="panel" style="margin-bottom:18px">
       <h2>Incoming petitions</h2>
-      <p class="sub" style="margin:0">Always listed in the order received. Flags never reorder or hide a petition. Select a row to see the petitioner's answers.</p>
+      <p class="sub" style="margin:0">Listed in the order received. Flags never reorder or hide a petition. Select a row to see the details.</p>
     </section>
     <div class="legend">
-      <span><span class="chip warn">Review promptly</span> petitioner answered yes to a safety question</span>
+      <span><span class="chip warn">Review promptly</span> the petitioner answered yes to a safety question</span>
       <span><span class="chip info">Completeness</span> something may be missing</span>
     </div>
     <div class="tablewrap">
       <table>
-        <thead><tr><th>Received</th><th>Ref</th><th>Ground</th><th>Petitioner-reported</th><th>Completeness</th></tr></thead>
+        <thead><tr><th scope="col">Received</th><th scope="col">Ref</th><th scope="col">Ground</th><th scope="col">Petitioner-reported</th><th scope="col">Completeness</th></tr></thead>
         <tbody id="queue"></tbody>
       </table>
     </div>
   </div>
+  </main>
 
-  <footer>Prototype checks are simple rules. In the full design, an LLM reads only the incident descriptions to pull out dates, places and separate incidents. Statute reference: <span class="cite">IC 35-45-10-1</span> (stalking definition).</footer>
+  <footer>Prototype checks are simple rules. In the full design, an LLM reads only the incident descriptions to pull out dates, places and separate incidents. Files are not uploaded anywhere in this prototype; only their names are kept. Statute reference: <span class="cite">IC 35-45-10-1</span> (stalking definition).</footer>
 </div>
-<div class="toast" id="toast" hidden></div>
+<div class="toast" id="toast" role="status" hidden></div>
 
 <script>
 const QUESTIONS=[
@@ -187,13 +233,13 @@ const QSHORT={recent:"Recent incident",threat:"Threat to kill",weapon:"Weapon ac
 const GROUND={stalking:"Stalking",dv:"Domestic/family violence",sa:"Sexual assault",harass:"Harassment"};
 
 const example=()=>({ground:"stalking",
-  incidents:[{date:"",place:"Outside my job",what:"He waited by my car after my shift and followed me home. Call me at 317-555-0142 if needed."}],
+  incidents:[{date:"",place:"Outside my job",what:"He waited by my car after my shift and followed me home. Call me at 317-555-0142 if needed.",files:[]}],
   answers:{recent:"yes",threat:"no",weapon:"unsure",choke:"no",kids:"no",release:"no"}});
 let pet=example();
 
 let queue=[
-  {t:"09:12",ref:"PO-1041",ground:"dv",incidents:[{date:"2026-11-04",place:"Home",what:"Pushed me into the wall and broke my phone."}],answers:{recent:"yes",threat:"yes",weapon:"no",choke:"yes",kids:"yes",release:"no"}},
-  {t:"09:40",ref:"PO-1042",ground:"harass",incidents:[{date:"2026-10-20",place:"Text messages",what:"Dozens of messages a day."},{date:"",place:"",what:"Showed up at my sister's house."}],answers:{recent:"no",threat:"no",weapon:"no",choke:"no",kids:"no",release:"no"}},
+  {t:"09:12",ref:"PO-1041",ground:"dv",incidents:[{date:"2026-11-04",place:"Home",what:"Pushed me into the wall and broke my phone.",files:["broken-phone.jpg"]}],answers:{recent:"yes",threat:"yes",weapon:"no",choke:"yes",kids:"yes",release:"no"}},
+  {t:"09:40",ref:"PO-1042",ground:"harass",incidents:[{date:"2026-10-20",place:"Text messages",what:"Dozens of messages a day.",files:["screenshots.pdf"]},{date:"",place:"",what:"Showed up at my sister's house."}],answers:{recent:"no",threat:"no",weapon:"no",choke:"no",kids:"no",release:"no"}},
   {t:"10:05",ref:"PO-1043",ground:"stalking",incidents:[{date:"2026-10-28",place:"Gym parking lot",what:"Followed me in his truck."},{date:"2026-11-02",place:"Church",what:"Sat behind me and left a note on my car."}],answers:{recent:"no",threat:"no",weapon:"yes",choke:"no",kids:"no",release:"no"}},
   {t:"10:31",ref:"PO-1044",ground:"sa",incidents:[{date:"2026-10-30",place:"Apartment at 412 Oak Street",what:"Assaulted me."}],answers:{recent:"no",threat:"no",weapon:"no",choke:"no",kids:"no",release:"yes"}}
 ];
@@ -202,42 +248,67 @@ const $=s=>document.querySelector(s);
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const PII=/(\b\d{3}[-.\s]?\d{3}[-.\s]?\d{4}\b)|(\b\d{3}-\d{2}-\d{4}\b)|(\b\d{2,5}\s+\w+(\s\w+)?\s+(St|Street|Ave|Avenue|Rd|Road|Dr|Drive|Ln|Lane|Blvd|Ct|Court)\b)/i;
 
+/* Each note: one short sentence up front (text), longer explanation behind "Why?" (why). */
 function completeness(p){
   const out=[];
   const filled=p.incidents.filter(i=>i.what.trim());
   if(p.ground==="stalking" && filled.length<2)
     out.push({kind:"info",short:"Stalking: 1 incident",
-      text:`Stalking under <span class="cite">IC 35-45-10-1</span> involves repeated or continuing conduct. If more than one incident happened, you can add each one separately.`});
+      text:"If more than one incident happened, you can add each one separately.",
+      why:`Stalking under <span class="cite">IC 35-45-10-1</span> involves repeated or continuing conduct, so the judge looks for more than one incident.`});
   p.incidents.forEach((i,n)=>{
     const miss=[]; if(!i.date)miss.push("date"); if(!i.place.trim())miss.push("place"); if(!i.what.trim())miss.push("what happened");
     if(miss.length) out.push({kind:"info",short:`Incident ${n+1}: no ${miss[0]}`,
-      text:`Incident ${n+1} has no ${miss.join(", ")}. If you know it, adding it can help the judge understand what happened. Approximate is fine.`});
+      text:`Incident ${n+1} has no ${miss.join(", ")}. Approximate is fine.`,
+      why:"Dates and places help the judge understand what happened and when."});
     if(PII.test(i.what+" "+i.place)) out.push({kind:"warn",short:"Possible confidential info",
-      text:`Incident ${n+1} looks like it includes a phone number or street address. That information can go in the confidential section so the other party doesn't see it.`});
+      text:`Incident ${n+1} may include a phone number or street address.`,
+      why:"The other party can see this part of the petition. Contact details can go in the confidential section instead."});
   });
   return out;
 }
 const signals=p=>QUESTIONS.filter(([k])=>p.answers[k]==="yes").map(([k])=>QSHORT[k]);
 
+function renderSteps(){
+  const s1=pet.incidents.length>0 && pet.incidents.every(i=>i.what.trim());
+  const answered=QUESTIONS.filter(([k])=>pet.answers[k]).length;
+  const notes=completeness(pet).length;
+  const steps=[
+    ["step-1","What happened",s1,s1?`${pet.incidents.length} incident${pet.incidents.length>1?"s":""} described`:"Describe each incident"],
+    ["step-2","Safety questions",answered===QUESTIONS.length,`${answered} of ${QUESTIONS.length} answered`],
+    ["step-3","Review and sign",false,notes?`${notes} note${notes>1?"s":""} to look at`:"Nothing to check"]
+  ];
+  $("#steps").innerHTML=steps.map(([id,label,done,state],n)=>`
+    <li class="${done?"done":""}"><a href="#${id}"><span class="n" aria-hidden="true">${done?"✓":n+1}</span>
+      <span>Step ${n+1}: ${label}<span class="state">${done?"Done · ":""}${state}</span></span></a></li>`).join("");
+}
 function renderIncidents(){
   $("#incidents").innerHTML=pet.incidents.map((i,n)=>`
-    <div class="incident">
-      <header><b>Incident ${n+1}</b>${pet.incidents.length>1?`<button class="btn link" data-rm="${n}" type="button">Remove</button>`:""}</header>
-      <div><label class="lbl" for="d${n}">Date</label><input type="date" id="d${n}" data-i="${n}" data-f="date" value="${esc(i.date)}"></div>
-      <div><label class="lbl" for="p${n}">Place</label><input type="text" id="p${n}" data-i="${n}" data-f="place" value="${esc(i.place)}"></div>
-      <div class="full"><label class="lbl" for="w${n}">What happened</label><textarea id="w${n}" data-i="${n}" data-f="what">${esc(i.what)}</textarea></div>
+    <div class="incident" role="group" aria-label="Incident ${n+1}">
+      <header><b>Incident ${n+1}</b>${pet.incidents.length>1?`<button class="btn link" data-rm="${n}" type="button" aria-label="Remove incident ${n+1}">Remove</button>`:""}</header>
+      <div><label class="lbl" for="d${n}">Date</label><span class="hint" id="dh${n}">Approximate is fine. Pick the closest date you remember.</span>
+        <input type="date" id="d${n}" data-i="${n}" data-f="date" value="${esc(i.date)}" aria-describedby="dh${n}"></div>
+      <div><label class="lbl" for="p${n}">Place</label><span class="hint" id="ph${n}">A general description is fine, like "outside my work".</span>
+        <input type="text" id="p${n}" data-i="${n}" data-f="place" value="${esc(i.place)}" aria-describedby="ph${n}"></div>
+      <div class="full"><label class="lbl" for="w${n}">What happened</label><span class="hint" id="wh${n}">Describe this one incident. Leave out phone numbers and home addresses; they go in the confidential section.</span>
+        <textarea id="w${n}" data-i="${n}" data-f="what" aria-describedby="wh${n}">${esc(i.what)}</textarea></div>
+      <div class="full"><label class="lbl" for="f${n}">Photos or files (optional)</label><span class="hint" id="fh${n}">For example, photos of injuries or damage, or screenshots of messages.</span>
+        <input type="file" id="f${n}" data-file="${n}" multiple accept="image/*,application/pdf" aria-describedby="fh${n}">
+        ${(i.files||[]).length?`<ul class="files" aria-label="Files added to incident ${n+1}">${i.files.map(f=>`<li>${esc(f)}</li>`).join("")}</ul>`:""}</div>
     </div>`).join("");
 }
 function renderQuestions(){
   $("#questions").innerHTML=QUESTIONS.map(([k,q])=>`
-    <div class="q"><span>${q}</span><div class="yn">${["yes","no","unsure"].map(v=>`
+    <fieldset class="q"><legend>${q}</legend><div class="yn">${["yes","no","unsure"].map(v=>`
       <input type="radio" name="q-${k}" id="q-${k}-${v}" value="${v}" ${pet.answers[k]===v?"checked":""}><label for="q-${k}-${v}">${v[0].toUpperCase()+v.slice(1)}</label>`).join("")}
-    </div></div>`).join("");
+    </div></fieldset>`).join("");
 }
 function renderNotes(){
   const c=completeness(pet);
-  $("#notes").innerHTML=c.length?c.map(n=>`<div class="note ${n.kind}"><b>${n.kind==="warn"?"Privacy":"You may want to check"}</b>${n.text}</div>`).join("")
-    :`<div class="note ok"><b>No notes</b>Nothing looks missing. You can continue to sign.</div>`;
+  $("#notes").innerHTML=c.length?c.map(n=>`<div class="note ${n.kind}"><b>${n.kind==="warn"?"Privacy: the other party can see this":"May be missing"}</b>${n.text}
+      <details><summary>Why?</summary>${n.why}</details></div>`).join("")
+    :`<div class="note ok"><b>Nothing to check</b>You can continue to sign.</div>`;
+  renderSteps();
 }
 function renderQueue(){
   $("#queue").innerHTML=queue.map((p,n)=>{
@@ -248,25 +319,37 @@ function renderQueue(){
       <td><div class="chips">${c.length?c.map(x=>`<span class="chip info">${x.short}</span>`).join(""):`<span class="chip none">No flags</span>`}</div></td></tr>
     ${p.open?`<tr class="detail"><td colspan="5"><div class="detailgrid">
       <div><h3>Safety answers (as given)</h3><ul>${QUESTIONS.map(([k,q])=>`<li>${q} <b>${p.answers[k]||"—"}</b></li>`).join("")}</ul></div>
-      <div><h3>Incidents</h3><ul>${p.incidents.map(i=>`<li><span class="mono">${i.date||"no date"}</span> · ${esc(i.place||"no place")}: ${esc(i.what||"—")}</li>`).join("")}</ul></div>
+      <div><h3>Incidents</h3><ul>${p.incidents.map(i=>`<li><span class="mono">${i.date||"no date"}</span> · ${esc(i.place||"no place")}: ${esc(i.what||"—")}${(i.files||[]).length?`<br><span class="fine">Files: ${i.files.map(esc).join(", ")}</span>`:""}</li>`).join("")}</ul></div>
     </div></td></tr>`:""}`;
   }).join("");
 }
 
-function show(v){
+function show(v,focus){
   const pv=v==="pet"; $("#view-pet").hidden=!pv; $("#view-staff").hidden=pv;
-  $("#tab-pet").setAttribute("aria-selected",pv); $("#tab-staff").setAttribute("aria-selected",!pv);
+  for(const [id,on] of [["#tab-pet",pv],["#tab-staff",!pv]]){$(id).setAttribute("aria-selected",on);$(id).tabIndex=on?0:-1}
+  if(focus)$(pv?"#tab-pet":"#tab-staff").focus();
   if(!pv)renderQueue();
 }
 function toast(m){const t=$("#toast");t.textContent=m;t.hidden=false;clearTimeout(t._h);t._h=setTimeout(()=>t.hidden=true,2400)}
+function setTheme(dark){
+  if(dark)document.documentElement.dataset.theme="dark"; else delete document.documentElement.dataset.theme;
+  $("#theme").setAttribute("aria-pressed",dark); $("#theme").textContent=dark?"Light mode":"Dark mode";
+  try{localStorage.setItem("pr-theme",dark?"dark":"light")}catch(e){}
+}
 
 $("#tab-pet").onclick=()=>show("pet");
 $("#tab-staff").onclick=()=>show("staff");
+$(".tabs").addEventListener("keydown",e=>{if(e.key==="ArrowRight"||e.key==="ArrowLeft"){e.preventDefault();show($("#view-pet").hidden?"pet":"staff",true)}});
+$("#theme").onclick=()=>setTheme(document.documentElement.dataset.theme!=="dark");
 $("#ground").onchange=e=>{pet.ground=e.target.value;renderNotes()};
 $("#incidents").addEventListener("input",e=>{const i=e.target.dataset.i;if(i!==undefined){pet.incidents[i][e.target.dataset.f]=e.target.value;renderNotes()}});
+$("#incidents").addEventListener("change",e=>{const i=e.target.dataset.file;if(i!==undefined){
+  /* Prototype: keep file names only; nothing leaves the browser. */
+  const inc=pet.incidents[i]; inc.files=[...(inc.files||[]),...[...e.target.files].map(f=>f.name)];
+  renderIncidents(); $(`#f${i}`).focus()}});
 $("#incidents").addEventListener("click",e=>{const r=e.target.dataset.rm;if(r!==undefined){pet.incidents.splice(+r,1);renderIncidents();renderNotes()}});
-$("#add-inc").onclick=()=>{pet.incidents.push({date:"",place:"",what:""});renderIncidents();renderNotes();$(`#d${pet.incidents.length-1}`).focus()};
-$("#questions").addEventListener("change",e=>{pet.answers[e.target.name.slice(2)]=e.target.value});
+$("#add-inc").onclick=()=>{pet.incidents.push({date:"",place:"",what:"",files:[]});renderIncidents();renderNotes();$(`#d${pet.incidents.length-1}`).focus()};
+$("#questions").addEventListener("change",e=>{pet.answers[e.target.name.slice(2)]=e.target.value;renderSteps()});
 $("#reset").onclick=()=>{pet=example();$("#ground").value=pet.ground;renderIncidents();renderQuestions();renderNotes()};
 $("#submit").onclick=()=>{
   const now=new Date(), t=String(now.getHours()).padStart(2,"0")+":"+String(now.getMinutes()).padStart(2,"0");
@@ -278,6 +361,7 @@ $("#submit").onclick=()=>{
 $("#queue").addEventListener("click",e=>{const r=e.target.closest("tr.row");if(r){const p=queue[r.dataset.row];p.open=!p.open;renderQueue()}});
 $("#queue").addEventListener("keydown",e=>{if((e.key==="Enter"||e.key===" ")&&e.target.matches("tr.row")){e.preventDefault();e.target.click()}});
 
+setTheme(document.documentElement.dataset.theme==="dark");
 renderIncidents();renderQuestions();renderNotes();
 </script>
 </body>
