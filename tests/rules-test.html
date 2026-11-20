@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Rules tests</title></head>
+<body>
+<h1>Completeness rule tests</h1>
+<p>Open this file in a browser. Each line should say PASS.</p>
+<pre id="out"></pre>
+<script src="../assets/data.js"></script>
+<script src="../assets/rules.js"></script>
+<script>
+const out = [];
+const T = (name, ok) => out.push((ok ? "PASS " : "FAIL ") + name);
+const issues = (S, page) => PR.check(S).filter(i => !page || i.page === page);
+const hasMsg = (S, re, level) => PR.check(S).some(i => re.test(i.msg) && (!level || i.level === level));
+
+/* A complete, consistent petition should have no required items left. */
+function complete() {
+  const S = PR.blank();
+  Object.assign(S.caption, { county: "Marion", court: "Marion Superior Court", petitioner: "Alex Rivera", respondent: "Sam Example" });
+  S.p1.stalking = true;
+  Object.assign(S.p2, { family: "none", nonFamily: "stalking" });
+  S.p3.age = "34"; S.p4.noCases = true; S.p5.iLive = true;
+  Object.assign(S.p6, { attorney: "no", address: "PO Box 100, Indianapolis, IN" });
+  S.p7.stalking = true; S.p7.fear = true;
+  S.p8 = [
+    { date: "2026-09-02", place: "Outside my workplace", desc: "He waited by my car after my shift, followed me to the bus stop and said he would see me tomorrow.", people: "Alex Rivera, a coworker", present: "yes" },
+    { date: "2026-09-09", place: "Bus stop on Main Street", desc: "He was waiting at the bus stop again and followed me onto the bus, sitting behind me and staring the whole ride.", people: "Alex Rivera", present: "yes" }];
+  S.p9.protectMe = true; S.p9.noContact = true; S.p9.owners = "Alex Rivera";
+  S.p10.pages = "0"; S.aff.a = true;
+  Object.assign(S.sign, { date: "2026-11-20", name: "Alex Rivera" });
+  Object.assign(S.conf, { rName: "Sam Example", rDob: "1992-04-01", rAddress: "somewhere", pAddress: "home" });
+  return S;
+}
+
+T("complete petition has no required items", issues(complete()).filter(i => i.level === "required").length === 0);
+T("blank petition has required items on every form page",
+  ["caption", "basis", "relationship", "respondent", "venue", "acts", "incidents", "relief", "signing"].every(p => issues(PR.blank(), p).some(i => i.level === "required")));
+
+let S = complete(); S.caption.respondent = "Sam Example and Pat Example";
+T("two respondents flagged", hasMsg(S, /only one Respondent/));
+
+S = complete(); S.p8 = [S.p8[0]];
+T("stalking with one incident -> course of conduct note", hasMsg(S, /two \(2\) or more incidents/, "recommended"));
+
+S = complete(); S.p1.dv = true;
+T("DV without family relationship -> required", hasMsg(S, /must be committed by a family or household member/, "required"));
+
+S = complete(); S.p2 = { ...S.p2, family: "blood", bloodRel: "" };
+T("related by blood needs the blank", hasMsg(S, /related by blood/, "required"));
+
+S = complete(); S.aff = { a: false, b: true, affidavits: "" };
+T("information and belief only -> affidavits required", hasMsg(S, /must attach affidavits/, "required"));
+S.aff.affidavits = "2";
+T("affidavits given -> no longer required", !hasMsg(S, /must attach affidavits/));
+T("affidavits but 0 pages attached -> recommended", hasMsg(S, /0 pages attached/, "recommended"));
+
+S = complete(); S.p8[0].people = "a coworker";
+T("present but own name missing -> required", hasMsg(S, /your own name must be/, "required"));
+
+S = complete(); S.p9.protectHousehold = true; S.p9.householdNames = "A\nB\nC\nD\nE\nF\nG\nH\nI\nJ";
+T("more than 9 protected -> required", hasMsg(S, /Only 9 protected/, "required"));
+T("household names not on confidential form -> recommended", hasMsg(S, /Confidential Form/, "recommended"));
+
+S = complete(); S.p9.indefinite = true;
+T("indefinite order without offender line -> required", hasMsg(S, /indefinite order requires/, "required"));
+
+S = complete(); S.p9.evict = true;
+T("eviction needs address and triggers hearing note", hasMsg(S, /Eviction: fill in/, "required") && hasMsg(S, /hearing within 30 days/, "info"));
+
+S = complete(); S.p1 = { dv: false, sex: false, stalking: false, harass: true }; S.p2.nonFamily = "harass"; S.p7 = { ...S.p7, harass: true };
+T("harassment alone -> notice and hearing info", hasMsg(S, /harassment alone/, "info"));
+
+S = complete(); S.conf.rDob = ""; S.conf.rSsnKnown = "no";
+T("no DOB or SSN -> national registry note", hasMsg(S, /national Protection Order Registry/, "recommended"));
+
+S = complete(); S.conf.notify = "yes"; S.conf.method = "email";
+T("email notifications need an email", hasMsg(S, /need your email/, "required"));
+
+S = complete(); S.p8[0].date = "2999-01-01";
+T("future incident date -> required", hasMsg(S, /in the future/, "required"));
+
+S = complete(); S.p3.age = "16";
+T("minor respondent -> juvenile court info", hasMsg(S, /juvenile court/, "info"));
+
+S = complete(); S.p9.reimburse = true; S.p9.rMedical = true;
+T("reimbursement without amount -> recommended", hasMsg(S, /specify the amount/, "recommended"));
+
+document.getElementById("out").textContent = out.join("\n") + `\n\n${out.filter(l => l.startsWith("PASS")).length} of ${out.length} passed`;
+</script>
+</body></html>
