@@ -7,12 +7,14 @@
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>
-/* Layout: civic form tool. Two views (petitioner steps, staff queue) under one header; content column max 1180px.
-   Light theme is the default; dark only when the viewer picks it with the header toggle. */
+/* Layout: civic form tool. Top bar (theme button), header with view tabs, then either the petitioner
+   form as four pages (one task per page, instructions beside the fields) or the staff queue.
+   Light theme is the default; dark only when the viewer picks it with the top-bar button. */
 :root{
   --bg:#f6f8fa; --surface:#ffffff; --sunk:#edf1f4; --line:#cfd8df;
   --fg:#16222c; --muted:#4f5e6b; --accent:#1d5e7a; --accent-ink:#ffffff; --accent-soft:#e1eef4;
   --warn:#7a4f00; --warn-line:#c48a00; --warn-soft:#fdf1d8; --info:#2a5585; --info-soft:#e4ecf6; --ok:#2a6540; --ok-soft:#e2f1e7;
+  --danger:#8a1f1f; --danger-soft:#fbe7e7;
   --f-body:"Public Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
   --f-mono:"IBM Plex Mono", ui-monospace, Menlo, monospace;
   color-scheme:light;
@@ -21,57 +23,85 @@
   --bg:#1a2129; --surface:#222b35; --sunk:#2a3540; --line:#3c4a57;
   --fg:#eef2f5; --muted:#b4c0ca; --accent:#7cc3e0; --accent-ink:#0b1a22; --accent-soft:#24414f;
   --warn:#f5cf80; --warn-line:#d9a63a; --warn-soft:#3d321a; --info:#a5c6ee; --info-soft:#253650; --ok:#94d8ad; --ok-soft:#203a2a;
+  --danger:#ffb4b4; --danger-soft:#43222a;
   color-scheme:dark;
 }
 
 *{box-sizing:border-box}
+[hidden]{display:none!important}
+h2[tabindex]:focus{outline:none}
 body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:17px;line-height:1.6}
-.wrap{max-width:1180px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:24px 56px}
+.wrap{max-width:1180px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
 .skip{position:absolute;left:-9999px}.skip:focus{left:12px;top:12px;background:var(--surface);color:var(--fg);padding:8px 12px;border-radius:6px;z-index:10}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
 
-header.top{display:flex;flex-wrap:wrap;gap:16px 24px;align-items:flex-end;justify-content:space-between;border-bottom:1px solid var(--line);padding-bottom:18px;margin-bottom:24px}
+/* Top bar: site label + theme button */
+.topbar{background:var(--surface);border-bottom:1px solid var(--line)}
+.topbar .wrap{display:flex;justify-content:space-between;align-items:center;gap:12px;padding-block:8px}
+.eyebrow{font-size:.85rem;color:var(--muted);font-weight:600;margin:0}
+#theme{display:inline-flex;align-items:center;gap:8px}
+#theme .ico{font-size:1.05rem;line-height:1}
+
+header.top{display:flex;flex-wrap:wrap;gap:16px 24px;align-items:flex-end;justify-content:space-between;border-bottom:1px solid var(--line);padding-block:22px 18px;margin-bottom:24px}
 h1{font-size:1.9rem;line-height:1.2;margin:0 0 6px;font-weight:700}
-.eyebrow{font-size:.85rem;letter-spacing:.04em;color:var(--muted);font-weight:600;margin:0 0 6px}
-.purpose{margin:0;color:var(--muted);max-width:60ch}
-.headctl{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.purpose{margin:0;color:var(--muted);max-width:62ch}
 .tabs{display:flex;gap:4px;background:var(--sunk);padding:4px;border-radius:8px}
 .tabs button{font:inherit;font-weight:600;font-size:.95rem;border:0;background:transparent;color:var(--muted);padding:10px 16px;border-radius:6px;cursor:pointer}
 .tabs button[aria-selected="true"]{background:var(--surface);color:var(--fg);box-shadow:0 1px 3px rgba(0,0,0,.12)}
-:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
 
-/* Step indicator */
-ol.steps{list-style:none;display:flex;flex-wrap:wrap;gap:8px;padding:0;margin:0 0 20px;counter-reset:s}
-ol.steps li{flex:1 1 200px}
-ol.steps a{display:flex;gap:10px;align-items:center;text-decoration:none;color:var(--fg);background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:10px 14px;font-weight:600}
-ol.steps .n{display:inline-grid;place-items:center;width:30px;height:30px;border-radius:50%;background:var(--sunk);color:var(--fg);font-weight:700;flex-shrink:0}
+/* Step bar: clickable, shows current and finished pages */
+ol.steps{list-style:none;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;padding:0;margin:0 0 20px}
+@media (max-width:760px){ol.steps{grid-template-columns:repeat(2,minmax(0,1fr))}}
+ol.steps button{width:100%;display:flex;gap:10px;align-items:center;text-align:left;font:inherit;color:var(--fg);background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:10px 12px;font-weight:600;cursor:pointer}
+ol.steps button[aria-current="step"]{border:2px solid var(--accent);padding:9px 11px;background:var(--accent-soft)}
+ol.steps .n{display:inline-grid;place-items:center;width:30px;height:30px;border-radius:50%;background:var(--sunk);font-weight:700;flex-shrink:0}
+ol.steps button[aria-current="step"] .n{background:var(--accent);color:var(--accent-ink)}
 ol.steps li.done .n{background:var(--ok);color:var(--surface)}
 ol.steps .state{display:block;font-size:.85rem;font-weight:500;color:var(--muted)}
 
-.grid{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:24px;align-items:start}
-@media (max-width:900px){.grid{grid-template-columns:minmax(0,1fr)}}
-.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:22px}
-h2{font-size:1.3rem;margin:0 0 4px;font-weight:700}
-.sub{color:var(--muted);margin:0 0 16px}
+/* Page: form on the left, "How to fill this in" on the right */
+.page{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:24px;align-items:start}
+@media (max-width:900px){.page{grid-template-columns:minmax(0,1fr)}.page .help{order:-1}}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:24px}
+.stepno{font-size:.9rem;font-weight:700;color:var(--accent);margin:0 0 2px}
+h2{font-size:1.45rem;margin:0 0 6px;font-weight:700}
+.lead{margin:0 0 20px;color:var(--muted)}
+.help{position:sticky;top:16px;background:var(--sunk);border-radius:10px;padding:20px}
+.help h3{font-size:1.05rem;margin:0 0 8px}
+.help ol,.help ul{margin:0;padding-left:20px}.help li{margin-bottom:8px}
+.help .tip{margin-top:14px;font-size:.95rem;color:var(--muted)}
+.alert{border-left:4px solid var(--danger);background:var(--danger-soft);padding:12px 14px;border-radius:0 8px 8px 0;margin-bottom:18px}
+
 .stack{display:flex;flex-direction:column;gap:18px}
-label.lbl,.lbl{display:block;font-weight:600;font-size:1rem;margin-bottom:4px}
+.lbl{display:block;font-weight:600;font-size:1rem;margin-bottom:4px}
 .hint{display:block;font-size:.92rem;color:var(--muted);margin:0 0 6px}
-select,input[type=text],input[type=date],textarea{font:inherit;width:100%;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:10px 12px}
+input[type=text],input[type=date],textarea{font:inherit;width:100%;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:10px 12px}
 input[type=file]{font:inherit;font-size:.95rem;max-width:100%}
-textarea{min-height:96px;resize:vertical}
+textarea{min-height:110px;resize:vertical}
+
+/* Reason choices as large radio cards */
+fieldset.choices{border:0;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
+fieldset.choices legend{font-weight:600;margin-bottom:10px;padding:0}
+.choice{display:flex;gap:12px;align-items:flex-start;border:1px solid var(--line);border-radius:8px;padding:14px;cursor:pointer;background:var(--bg)}
+.choice input{margin-top:5px;width:18px;height:18px;accent-color:var(--accent);flex-shrink:0}
+.choice b{display:block}.choice span{color:var(--muted);font-size:.95rem}
+.choice:has(input:checked){border:2px solid var(--accent);padding:13px;background:var(--accent-soft)}
+
 .incident{border:1px solid var(--line);border-radius:8px;padding:16px;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px 18px;background:var(--bg)}
 .incident .full{grid-column:1/-1}
 .incident header{grid-column:1/-1;display:flex;justify-content:space-between;align-items:center}
 .incident header b{font-size:1.05rem}
 @media (max-width:560px){.incident{grid-template-columns:minmax(0,1fr)}}
 .files{margin:6px 0 0;padding-left:20px;font-size:.95rem}
-.btn{font:inherit;font-weight:600;font-size:1rem;border-radius:6px;padding:10px 16px;cursor:pointer;border:1px solid var(--line);background:var(--surface);color:var(--fg)}
+
+.btn{font:inherit;font-weight:600;font-size:1rem;border-radius:6px;padding:10px 18px;cursor:pointer;border:1px solid var(--line);background:var(--surface);color:var(--fg)}
 .btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
 .btn.link{border:0;background:none;color:var(--accent);padding:6px 0;text-decoration:underline;text-underline-offset:3px}
+.pager{display:flex;justify-content:space-between;gap:12px;margin-top:24px;padding-top:18px;border-top:1px solid var(--line)}
+.pager .right{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap}
 
 /* Safety questions: question text left, answer buttons in a fixed aligned column */
-.q{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:16px;align-items:center;padding:12px 0;border-top:1px solid var(--line)}
-.q:first-child{border-top:0}
-fieldset.q{margin:0;border:0;border-top:1px solid var(--line);padding:12px 0;min-width:0}
+fieldset.q{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:16px;align-items:center;margin:0;border:0;border-top:1px solid var(--line);padding:14px 0;min-width:0}
 fieldset.q:first-child{border-top:0}
 fieldset.q legend{float:left;padding:0}
 .yn{display:grid;grid-template-columns:repeat(3,84px);gap:6px}
@@ -79,12 +109,16 @@ fieldset.q legend{float:left;padding:0}
 .yn input{position:absolute;opacity:0;pointer-events:none}
 .yn input:checked+label{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
 .yn input:focus-visible+label{outline:3px solid var(--accent);outline-offset:2px}
-@media (max-width:560px){.q{grid-template-columns:minmax(0,1fr)}.yn{grid-template-columns:repeat(3,1fr)}}
+@media (max-width:560px){fieldset.q{grid-template-columns:minmax(0,1fr)}.yn{grid-template-columns:repeat(3,1fr)}}
 
-aside.review{position:sticky;top:16px}
-.legend-box{display:flex;flex-direction:column;gap:6px;font-size:.92rem;color:var(--muted);background:var(--sunk);border-radius:8px;padding:10px 12px;margin-bottom:14px}
+/* Review page */
+.summary{border:1px solid var(--line);border-radius:8px;padding:14px 16px;background:var(--bg)}
+.summary header{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:6px}
+.summary h3{font-size:1.05rem;margin:0}
+.summary ul{margin:0;padding-left:20px}
+.legend-box{display:flex;flex-direction:column;gap:6px;font-size:.95rem}
 .legend-box span{display:flex;gap:8px;align-items:center}
-.sw{width:14px;height:14px;border-radius:3px;flex-shrink:0;border-left:4px solid}
+.sw{width:16px;height:16px;border-radius:3px;flex-shrink:0;border-left:4px solid}
 .sw.warn{background:var(--warn-soft);border-color:var(--warn-line)}
 .sw.info{background:var(--info-soft);border-color:var(--info)}
 .sw.ok{background:var(--ok-soft);border-color:var(--ok)}
@@ -97,6 +131,7 @@ aside.review{position:sticky;top:16px}
 .cite{font-family:var(--f-mono);font-size:.9rem}
 .fine{font-size:.92rem;color:var(--muted)}
 
+/* Staff queue */
 .legend{display:flex;flex-wrap:wrap;gap:8px 20px;font-size:.95rem;color:var(--muted);margin-bottom:14px}
 .tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
 table{border-collapse:collapse;width:100%;min-width:720px;font-size:1rem}
@@ -116,7 +151,7 @@ tr.detail td{background:var(--bg)}
 .detailgrid h3{font-size:.9rem;color:var(--muted);margin:0 0 6px}
 .detailgrid ul{margin:0;padding-left:20px}
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom,0px));background:var(--fg);color:var(--bg);padding:12px 18px;border-radius:6px;font-weight:600}
-footer{margin-top:32px;font-size:.92rem;color:var(--muted);border-top:1px solid var(--line);padding-top:14px}
+footer{margin:32px 0 48px;font-size:.92rem;color:var(--muted);border-top:1px solid var(--line);padding-top:14px}
 @media (prefers-reduced-motion:no-preference){.note{animation:fade .2s ease}@keyframes fade{from{opacity:.4}to{opacity:1}}}
 </style>
 <script>
@@ -126,82 +161,150 @@ try{if(localStorage.getItem("pr-theme")==="dark")document.documentElement.datase
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>
+
+<div class="topbar">
+  <div class="wrap">
+    <p class="eyebrow">CS4535 Team 4 · Prototype, not an official court site</p>
+    <button class="btn" id="theme" type="button" aria-pressed="false"></button>
+  </div>
+</div>
+
 <div class="wrap">
   <header class="top">
     <div>
-      <p class="eyebrow">CS4535 Team 4 · Prototype, not an official court site</p>
       <h1>Petition Review Flags</h1>
-      <p class="purpose">A check step for Indiana protection order petitions. Petitioners see gentle notes before they sign. Court staff see each petition in the order it arrived, with its flags.</p>
+      <p class="purpose">A check step for Indiana protection order petitions. Petitioners fill in four short pages and see gentle notes before they sign. Court staff see each petition in the order it arrived, with its flags.</p>
     </div>
-    <div class="headctl">
-      <div class="tabs" role="tablist" aria-label="Choose a view">
-        <button id="tab-pet" role="tab" aria-selected="true" aria-controls="view-pet">For petitioners</button>
-        <button id="tab-staff" role="tab" aria-selected="false" aria-controls="view-staff" tabindex="-1">For court staff</button>
-      </div>
-      <button class="btn" id="theme" type="button" aria-pressed="false">Dark mode</button>
+    <div class="tabs" role="tablist" aria-label="Choose a view">
+      <button id="tab-pet" role="tab" aria-selected="true" aria-controls="view-pet">For petitioners</button>
+      <button id="tab-staff" role="tab" aria-selected="false" aria-controls="view-staff" tabindex="-1">For court staff</button>
     </div>
   </header>
 
   <main id="main">
-  <!-- PETITIONER VIEW -->
+  <!-- PETITIONER VIEW: four pages -->
   <div id="view-pet" role="tabpanel" aria-labelledby="tab-pet">
-    <nav aria-label="Steps">
+    <nav aria-label="Pages of the petition">
       <ol class="steps" id="steps"></ol>
     </nav>
-    <div class="grid">
-      <div class="stack">
-        <section class="panel" id="step-1" aria-labelledby="h-step-1">
-          <h2 id="h-step-1">1. What happened</h2>
-          <p class="sub">Example answers are filled in so you can try it.</p>
-          <div class="stack">
-            <div>
-              <label class="lbl" for="ground">What is this petition based on?</label>
-              <select id="ground">
-                <option value="stalking" selected>Stalking</option>
-                <option value="dv">Domestic or family violence</option>
-                <option value="sa">Sexual assault</option>
-                <option value="harass">Repeated acts of harassment</option>
-              </select>
-            </div>
-            <div>
-              <div class="lbl" id="inc-label">Incidents</div>
-              <span class="hint">Add each incident separately, one per box.</span>
-              <div id="incidents" class="stack" aria-labelledby="inc-label"></div>
-              <button class="btn link" id="add-inc" type="button">+ Add another incident</button>
-            </div>
-          </div>
-        </section>
 
-        <section class="panel" id="step-2" aria-labelledby="h-step-2">
-          <h2 id="h-step-2">2. Safety questions</h2>
-          <p class="sub">Court staff see your answers exactly as you give them. They don't affect whether your petition is accepted.</p>
-          <div id="questions"></div>
-        </section>
+    <!-- Page 1 -->
+    <section class="page" id="page-1" data-page="1" aria-labelledby="h1-p">
+      <div class="panel">
+        <p class="stepno">Page 1 of 4</p>
+        <h2 id="h1-p" tabindex="-1">Why you are filing</h2>
+        <p class="lead">Tell the court what your petition is based on. Example answers are filled in so you can try the form.</p>
+        <fieldset class="choices" id="ground">
+          <legend>What is this petition based on?</legend>
+          <label class="choice"><input type="radio" name="ground" value="stalking"><div><b>Stalking</b><span>Someone keeps following, watching or contacting you, and it makes you feel afraid.</span></div></label>
+          <label class="choice"><input type="radio" name="ground" value="dv"><div><b>Domestic or family violence</b><span>Harm or threats from a family or household member, a current or former partner, or someone you share a child with.</span></div></label>
+          <label class="choice"><input type="radio" name="ground" value="sa"><div><b>Sexual assault</b><span>Unwanted sexual contact or a sexual act you did not agree to.</span></div></label>
+          <label class="choice"><input type="radio" name="ground" value="harass"><div><b>Repeated acts of harassment</b><span>Repeated or continuing contact that is meant to upset or alarm you.</span></div></label>
+        </fieldset>
+        <div class="pager"><div class="right"><button class="btn primary" type="button" data-go="2">Next: What happened</button></div></div>
       </div>
+      <aside class="help" aria-labelledby="help-1">
+        <h3 id="help-1">How to fill in this page</h3>
+        <ol>
+          <li>Read the four choices and the short description under each.</li>
+          <li>Pick the one that best matches what happened to you.</li>
+          <li>If more than one fits, pick the main one. You will describe everything that happened on the next page.</li>
+        </ol>
+        <p class="tip">These descriptions are plain-language summaries, not legal definitions. If you are unsure, pick the closest one. You can come back and change it before you sign.</p>
+      </aside>
+    </section>
 
-      <aside class="review panel" id="step-3" aria-labelledby="h-step-3">
-        <h2 id="h-step-3">3. Review and sign</h2>
-        <p class="sub">These are notes, not requirements. You can file either way.</p>
-        <div class="legend-box" aria-label="What the colors mean">
+    <!-- Page 2 -->
+    <section class="page" id="page-2" data-page="2" aria-labelledby="h2-p" hidden>
+      <div class="panel">
+        <p class="stepno">Page 2 of 4</p>
+        <h2 id="h2-p" tabindex="-1">What happened</h2>
+        <p class="lead">Describe each incident in its own box, so the judge can see when and where each thing happened.</p>
+        <div id="incidents" class="stack"></div>
+        <button class="btn link" id="add-inc" type="button">+ Add another incident</button>
+        <div class="pager">
+          <button class="btn" type="button" data-go="1">Back</button>
+          <div class="right"><button class="btn primary" type="button" data-go="3">Next: Safety questions</button></div>
+        </div>
+      </div>
+      <aside class="help" aria-labelledby="help-2">
+        <h3 id="help-2">How to fill in this page</h3>
+        <ol>
+          <li><b>One incident per box.</b> If something happened on different days, use "+ Add another incident" for each day.</li>
+          <li><b>Date:</b> the day it happened. If you don't know the exact day, pick the closest date you remember.</li>
+          <li><b>Place:</b> where it happened. A general description is fine, like "outside my work" or "by text message".</li>
+          <li><b>What happened:</b> in your own words, what the person did or said. Include who else was there, if anyone.</li>
+          <li><b>Photos or files</b> (optional): for example photos of injuries or damage, or screenshots of messages.</li>
+        </ol>
+        <p class="tip">Leave out phone numbers and home addresses. The other party can see this part of the petition; contact details go in the confidential section.</p>
+      </aside>
+    </section>
+
+    <!-- Page 3 -->
+    <section class="page" id="page-3" data-page="3" aria-labelledby="h3-p" hidden>
+      <div class="panel">
+        <p class="stepno">Page 3 of 4</p>
+        <h2 id="h3-p" tabindex="-1">Safety questions</h2>
+        <p class="lead">Court staff see your answers exactly as you give them. They help staff see which petitions to look at first. They don't affect whether your petition is accepted.</p>
+        <div class="alert" role="note"><b>If you are in danger right now, call 911.</b></div>
+        <div id="questions"></div>
+        <div class="pager">
+          <button class="btn" type="button" data-go="2">Back</button>
+          <div class="right"><button class="btn primary" type="button" data-go="4">Next: Review and sign</button></div>
+        </div>
+      </div>
+      <aside class="help" aria-labelledby="help-3">
+        <h3 id="help-3">How to fill in this page</h3>
+        <ol>
+          <li>Answer each question with <b>Yes</b>, <b>No</b> or <b>Unsure</b>.</li>
+          <li>"Unsure" is a fine answer. Choose it if you don't know.</li>
+          <li>Answer based on what you know today.</li>
+        </ol>
+        <p class="tip">A "Yes" marks your petition for prompt review by court staff. It does not slow your petition down or count against you.</p>
+      </aside>
+    </section>
+
+    <!-- Page 4 -->
+    <section class="page" id="page-4" data-page="4" aria-labelledby="h4-p" hidden>
+      <div class="panel">
+        <p class="stepno">Page 4 of 4</p>
+        <h2 id="h4-p" tabindex="-1">Review and sign</h2>
+        <p class="lead">Check your answers before you sign. The notes below are suggestions, not requirements. You can file either way.</p>
+        <div class="stack">
+          <div id="notes" class="stack" aria-live="polite"></div>
+          <div id="summary" class="stack"></div>
+        </div>
+        <div class="pager">
+          <button class="btn" type="button" data-go="3">Back</button>
+          <div class="right">
+            <button class="btn" id="reset" type="button">Reset example</button>
+            <button class="btn primary" id="submit" type="button">Sign and file</button>
+          </div>
+        </div>
+        <p class="fine" style="margin-top:12px">This tool doesn't give legal advice or tell you whether you will get an order.</p>
+      </div>
+      <aside class="help" aria-labelledby="help-4">
+        <h3 id="help-4">How to use this page</h3>
+        <ol>
+          <li>Read each note. Use "Edit" to go back and change something.</li>
+          <li>Check the summary of your answers.</li>
+          <li>When you are ready, select <b>Sign and file</b>.</li>
+        </ol>
+        <h3 style="margin-top:16px">What the colors mean</h3>
+        <div class="legend-box">
           <span><i class="sw warn" aria-hidden="true"></i>Yellow: privacy. The other party can see this.</span>
           <span><i class="sw info" aria-hidden="true"></i>Blue: something may be missing.</span>
           <span><i class="sw ok" aria-hidden="true"></i>Green: nothing to check.</span>
         </div>
-        <div id="notes" class="stack" aria-live="polite"></div>
-        <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:18px">
-          <button class="btn primary" id="submit" type="button">Continue to sign and file</button>
-          <button class="btn" id="reset" type="button">Reset example</button>
-        </div>
-        <p class="fine" style="margin-top:12px">This tool doesn't give legal advice or tell you whether you will get an order.</p>
       </aside>
-    </div>
+    </section>
   </div>
 
   <!-- STAFF VIEW -->
   <div id="view-staff" role="tabpanel" aria-labelledby="tab-staff" hidden>
     <section class="panel" style="margin-bottom:18px">
       <h2>Incoming petitions</h2>
-      <p class="sub" style="margin:0">Listed in the order received. Flags never reorder or hide a petition. Select a row to see the details.</p>
+      <p class="lead" style="margin:0">Listed in the order received. Flags never reorder or hide a petition. Select a row to see the details.</p>
     </section>
     <div class="legend">
       <span><span class="chip warn">Review promptly</span> the petitioner answered yes to a safety question</span>
@@ -231,11 +334,13 @@ const QUESTIONS=[
 ];
 const QSHORT={recent:"Recent incident",threat:"Threat to kill",weapon:"Weapon access",choke:"Strangulation",kids:"Children at risk",release:"Upcoming contact"};
 const GROUND={stalking:"Stalking",dv:"Domestic/family violence",sa:"Sexual assault",harass:"Harassment"};
+const PAGES=[[1,"Why you are filing"],[2,"What happened"],[3,"Safety questions"],[4,"Review and sign"]];
 
 const example=()=>({ground:"stalking",
   incidents:[{date:"",place:"Outside my job",what:"He waited by my car after my shift and followed me home. Call me at 317-555-0142 if needed.",files:[]}],
   answers:{recent:"yes",threat:"no",weapon:"unsure",choke:"no",kids:"no",release:"no"}});
 let pet=example();
+let page=1;
 
 let queue=[
   {t:"09:12",ref:"PO-1041",ground:"dv",incidents:[{date:"2026-11-04",place:"Home",what:"Pushed me into the wall and broke my phone.",files:["broken-phone.jpg"]}],answers:{recent:"yes",threat:"yes",weapon:"no",choke:"yes",kids:"yes",release:"no"}},
@@ -248,20 +353,20 @@ const $=s=>document.querySelector(s);
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const PII=/(\b\d{3}[-.\s]?\d{3}[-.\s]?\d{4}\b)|(\b\d{3}-\d{2}-\d{4}\b)|(\b\d{2,5}\s+\w+(\s\w+)?\s+(St|Street|Ave|Avenue|Rd|Road|Dr|Drive|Ln|Lane|Blvd|Ct|Court)\b)/i;
 
-/* Each note: one short sentence up front (text), longer explanation behind "Why?" (why). */
+/* Each note: one short sentence (text), longer explanation behind "Why?" (why), and the page to fix it on. */
 function completeness(p){
   const out=[];
   const filled=p.incidents.filter(i=>i.what.trim());
   if(p.ground==="stalking" && filled.length<2)
-    out.push({kind:"info",short:"Stalking: 1 incident",
+    out.push({kind:"info",page:2,short:"Stalking: 1 incident",
       text:"If more than one incident happened, you can add each one separately.",
       why:`Stalking under <span class="cite">IC 35-45-10-1</span> involves repeated or continuing conduct, so the judge looks for more than one incident.`});
   p.incidents.forEach((i,n)=>{
     const miss=[]; if(!i.date)miss.push("date"); if(!i.place.trim())miss.push("place"); if(!i.what.trim())miss.push("what happened");
-    if(miss.length) out.push({kind:"info",short:`Incident ${n+1}: no ${miss[0]}`,
+    if(miss.length) out.push({kind:"info",page:2,short:`Incident ${n+1}: no ${miss[0]}`,
       text:`Incident ${n+1} has no ${miss.join(", ")}. Approximate is fine.`,
       why:"Dates and places help the judge understand what happened and when."});
-    if(PII.test(i.what+" "+i.place)) out.push({kind:"warn",short:"Possible confidential info",
+    if(PII.test(i.what+" "+i.place)) out.push({kind:"warn",page:2,short:"Possible confidential info",
       text:`Incident ${n+1} may include a phone number or street address.`,
       why:"The other party can see this part of the petition. Contact details can go in the confidential section instead."});
   });
@@ -269,31 +374,43 @@ function completeness(p){
 }
 const signals=p=>QUESTIONS.filter(([k])=>p.answers[k]==="yes").map(([k])=>QSHORT[k]);
 
-function renderSteps(){
-  const s1=pet.incidents.length>0 && pet.incidents.every(i=>i.what.trim());
-  const answered=QUESTIONS.filter(([k])=>pet.answers[k]).length;
-  const notes=completeness(pet).length;
-  const steps=[
-    ["step-1","What happened",s1,s1?`${pet.incidents.length} incident${pet.incidents.length>1?"s":""} described`:"Describe each incident"],
-    ["step-2","Safety questions",answered===QUESTIONS.length,`${answered} of ${QUESTIONS.length} answered`],
-    ["step-3","Review and sign",false,notes?`${notes} note${notes>1?"s":""} to look at`:"Nothing to check"]
-  ];
-  $("#steps").innerHTML=steps.map(([id,label,done,state],n)=>`
-    <li class="${done?"done":""}"><a href="#${id}"><span class="n" aria-hidden="true">${done?"✓":n+1}</span>
-      <span>Step ${n+1}: ${label}<span class="state">${done?"Done · ":""}${state}</span></span></a></li>`).join("");
+/* ---- page navigation ---- */
+function pageState(n){
+  if(n===1)return [!!pet.ground, pet.ground?GROUND[pet.ground]:"Not chosen yet"];
+  if(n===2){const d=pet.incidents.filter(i=>i.what.trim()).length; return [d>0 && d===pet.incidents.length, `${d} incident${d===1?"":"s"} described`]}
+  if(n===3){const a=QUESTIONS.filter(([k])=>pet.answers[k]).length; return [a===QUESTIONS.length, `${a} of ${QUESTIONS.length} answered`]}
+  const c=completeness(pet).length; return [false, c?`${c} note${c>1?"s":""} to look at`:"Nothing to check"];
 }
+function renderSteps(){
+  $("#steps").innerHTML=PAGES.map(([n,label])=>{
+    const [done,state]=pageState(n);
+    return `<li class="${done?"done":""}"><button type="button" data-go="${n}" ${n===page?'aria-current="step"':""}>
+      <span class="n" aria-hidden="true">${done&&n!==page?"✓":n}</span>
+      <span>${label}<span class="state">${done?"Done · ":""}${state}</span></span></button></li>`}).join("");
+}
+function goTo(n){
+  page=n;
+  document.querySelectorAll("#view-pet .page").forEach(s=>s.hidden=+s.dataset.page!==n);
+  if(n===4){renderNotes();renderSummary()}
+  renderSteps();
+  window.scrollTo({top:0});
+  $(`#h${n}-p`).focus({preventScroll:true});
+}
+
+/* ---- page content ---- */
+function renderGround(){document.querySelectorAll('input[name="ground"]').forEach(r=>r.checked=r.value===pet.ground)}
 function renderIncidents(){
   $("#incidents").innerHTML=pet.incidents.map((i,n)=>`
     <div class="incident" role="group" aria-label="Incident ${n+1}">
       <header><b>Incident ${n+1}</b>${pet.incidents.length>1?`<button class="btn link" data-rm="${n}" type="button" aria-label="Remove incident ${n+1}">Remove</button>`:""}</header>
-      <div><label class="lbl" for="d${n}">Date</label><span class="hint" id="dh${n}">Approximate is fine. Pick the closest date you remember.</span>
+      <div><label class="lbl" for="d${n}">Date</label><span class="hint" id="dh${n}">Approximate is fine.</span>
         <input type="date" id="d${n}" data-i="${n}" data-f="date" value="${esc(i.date)}" aria-describedby="dh${n}"></div>
-      <div><label class="lbl" for="p${n}">Place</label><span class="hint" id="ph${n}">A general description is fine, like "outside my work".</span>
+      <div><label class="lbl" for="p${n}">Place</label><span class="hint" id="ph${n}">A general description is fine.</span>
         <input type="text" id="p${n}" data-i="${n}" data-f="place" value="${esc(i.place)}" aria-describedby="ph${n}"></div>
-      <div class="full"><label class="lbl" for="w${n}">What happened</label><span class="hint" id="wh${n}">Describe this one incident. Leave out phone numbers and home addresses; they go in the confidential section.</span>
+      <div class="full"><label class="lbl" for="w${n}">What happened</label><span class="hint" id="wh${n}">What the person did or said, in your own words. No phone numbers or addresses.</span>
         <textarea id="w${n}" data-i="${n}" data-f="what" aria-describedby="wh${n}">${esc(i.what)}</textarea></div>
-      <div class="full"><label class="lbl" for="f${n}">Photos or files (optional)</label><span class="hint" id="fh${n}">For example, photos of injuries or damage, or screenshots of messages.</span>
-        <input type="file" id="f${n}" data-file="${n}" multiple accept="image/*,application/pdf" aria-describedby="fh${n}">
+      <div class="full"><label class="lbl" for="f${n}">Photos or files (optional)</label>
+        <input type="file" id="f${n}" data-file="${n}" multiple accept="image/*,application/pdf">
         ${(i.files||[]).length?`<ul class="files" aria-label="Files added to incident ${n+1}">${i.files.map(f=>`<li>${esc(f)}</li>`).join("")}</ul>`:""}</div>
     </div>`).join("");
 }
@@ -306,9 +423,18 @@ function renderQuestions(){
 function renderNotes(){
   const c=completeness(pet);
   $("#notes").innerHTML=c.length?c.map(n=>`<div class="note ${n.kind}"><b>${n.kind==="warn"?"Privacy: the other party can see this":"May be missing"}</b>${n.text}
-      <details><summary>Why?</summary>${n.why}</details></div>`).join("")
-    :`<div class="note ok"><b>Nothing to check</b>You can continue to sign.</div>`;
-  renderSteps();
+      <details><summary>Why?</summary>${n.why}</details>
+      <button class="btn link" type="button" data-go="${n.page}">Edit on page ${n.page}</button></div>`).join("")
+    :`<div class="note ok"><b>Nothing to check</b>You can sign and file.</div>`;
+}
+function renderSummary(){
+  const ans=QUESTIONS.map(([k,q])=>`<li>${q} <b>${pet.answers[k]?pet.answers[k][0].toUpperCase()+pet.answers[k].slice(1):"Not answered"}</b></li>`).join("");
+  const incs=pet.incidents.map((i,n)=>`<li><b>Incident ${n+1}:</b> ${esc(i.date||"no date")} · ${esc(i.place||"no place")}<br>${esc(i.what||"(nothing written)")}${(i.files||[]).length?`<br><span class="fine">Files: ${i.files.map(esc).join(", ")}</span>`:""}</li>`).join("");
+  const box=(n,title,body)=>`<div class="summary"><header><h3>${title}</h3><button class="btn link" type="button" data-go="${n}" aria-label="Edit ${title}">Edit</button></header>${body}</div>`;
+  $("#summary").innerHTML=
+    box(1,"Why you are filing",`<p style="margin:0">${pet.ground?GROUND[pet.ground]:"Not chosen"}</p>`)+
+    box(2,"What happened",`<ul>${incs}</ul>`)+
+    box(3,"Safety questions",`<ul>${ans}</ul>`);
 }
 function renderQueue(){
   $("#queue").innerHTML=queue.map((p,n)=>{
@@ -333,24 +459,27 @@ function show(v,focus){
 function toast(m){const t=$("#toast");t.textContent=m;t.hidden=false;clearTimeout(t._h);t._h=setTimeout(()=>t.hidden=true,2400)}
 function setTheme(dark){
   if(dark)document.documentElement.dataset.theme="dark"; else delete document.documentElement.dataset.theme;
-  $("#theme").setAttribute("aria-pressed",dark); $("#theme").textContent=dark?"Light mode":"Dark mode";
+  const b=$("#theme"); b.setAttribute("aria-pressed",dark);
+  b.innerHTML=dark?`<span class="ico" aria-hidden="true">☀</span>Light mode`:`<span class="ico" aria-hidden="true">☾</span>Dark mode`;
   try{localStorage.setItem("pr-theme",dark?"dark":"light")}catch(e){}
 }
 
+/* ---- events ---- */
+document.addEventListener("click",e=>{const g=e.target.closest("[data-go]");if(g)goTo(+g.dataset.go)});
 $("#tab-pet").onclick=()=>show("pet");
 $("#tab-staff").onclick=()=>show("staff");
 $(".tabs").addEventListener("keydown",e=>{if(e.key==="ArrowRight"||e.key==="ArrowLeft"){e.preventDefault();show($("#view-pet").hidden?"pet":"staff",true)}});
 $("#theme").onclick=()=>setTheme(document.documentElement.dataset.theme!=="dark");
-$("#ground").onchange=e=>{pet.ground=e.target.value;renderNotes()};
-$("#incidents").addEventListener("input",e=>{const i=e.target.dataset.i;if(i!==undefined){pet.incidents[i][e.target.dataset.f]=e.target.value;renderNotes()}});
+$("#ground").addEventListener("change",e=>{pet.ground=e.target.value;renderSteps()});
+$("#incidents").addEventListener("input",e=>{const i=e.target.dataset.i;if(i!==undefined){pet.incidents[i][e.target.dataset.f]=e.target.value;renderSteps()}});
 $("#incidents").addEventListener("change",e=>{const i=e.target.dataset.file;if(i!==undefined){
   /* Prototype: keep file names only; nothing leaves the browser. */
   const inc=pet.incidents[i]; inc.files=[...(inc.files||[]),...[...e.target.files].map(f=>f.name)];
   renderIncidents(); $(`#f${i}`).focus()}});
-$("#incidents").addEventListener("click",e=>{const r=e.target.dataset.rm;if(r!==undefined){pet.incidents.splice(+r,1);renderIncidents();renderNotes()}});
-$("#add-inc").onclick=()=>{pet.incidents.push({date:"",place:"",what:"",files:[]});renderIncidents();renderNotes();$(`#d${pet.incidents.length-1}`).focus()};
+$("#incidents").addEventListener("click",e=>{const r=e.target.dataset.rm;if(r!==undefined){pet.incidents.splice(+r,1);renderIncidents();renderSteps()}});
+$("#add-inc").onclick=()=>{pet.incidents.push({date:"",place:"",what:"",files:[]});renderIncidents();renderSteps();$(`#d${pet.incidents.length-1}`).focus()};
 $("#questions").addEventListener("change",e=>{pet.answers[e.target.name.slice(2)]=e.target.value;renderSteps()});
-$("#reset").onclick=()=>{pet=example();$("#ground").value=pet.ground;renderIncidents();renderQuestions();renderNotes()};
+$("#reset").onclick=()=>{pet=example();renderGround();renderIncidents();renderQuestions();goTo(1)};
 $("#submit").onclick=()=>{
   const now=new Date(), t=String(now.getHours()).padStart(2,"0")+":"+String(now.getMinutes()).padStart(2,"0");
   const ref="PO-"+(1041+queue.length);
@@ -362,7 +491,7 @@ $("#queue").addEventListener("click",e=>{const r=e.target.closest("tr.row");if(r
 $("#queue").addEventListener("keydown",e=>{if((e.key==="Enter"||e.key===" ")&&e.target.matches("tr.row")){e.preventDefault();e.target.click()}});
 
 setTheme(document.documentElement.dataset.theme==="dark");
-renderIncidents();renderQuestions();renderNotes();
+renderGround();renderIncidents();renderQuestions();renderSteps();
 </script>
 </body>
 </html>
